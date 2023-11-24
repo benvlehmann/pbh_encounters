@@ -29,6 +29,6 @@ setup(
         "emcee",
         "schwimmbad"
     ],
-    python_requires='>=3',
+    python_requires='>=3.7',
     scripts=['bin/run_mcmc']
 )

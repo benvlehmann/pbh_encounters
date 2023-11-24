@@ -37,6 +37,7 @@ import numpy as np
 import emcee
 import multiprocessing
 from multiprocessing import Pool
+from schwimmbad import MPIPool
 
 from .common import (
     BadMassError, AU, KILOMETER, SECOND, GRAM)
@@ -531,7 +532,8 @@ class SolarSystemMonteCarlo(object):
         # log-prior and log-likelihood.
         return log_prior + self.log_likelihood(params)
 
-    def run(self, *args, init_kwargs=dict(), parallel=True, **kwargs):
+    def run(self, *args, init_kwargs=dict(), parallel=True,
+            mpi=False, **kwargs):
         """
         Runs the MCMC simulation using the emcee package.
 
@@ -546,6 +548,9 @@ class SolarSystemMonteCarlo(object):
             emcee.EnsembleSampler.
         parallel (bool, optional): Flag to indicate if the simulation should
             run in parallel. Defaults to True.
+        mpi (bool, optional): Flag to indicate if parallelization should use
+            MPI instead of multiprocessing. If True, the `parallel` keyword
+            is ignored. Defaults to False.
         **kwargs: Additional keyword arguments for the emcee's run_mcmc method.
 
         Returns:
@@ -556,19 +561,23 @@ class SolarSystemMonteCarlo(object):
         the MCMC process.
 
         """
-        # Additional kwargs for the MCMC sampler
-        extra_kwargs = dict()
 
         # Set up parallel processing if enabled
-        with Pool(multiprocessing.cpu_count() - 1) as pool:
-            if parallel:
-                # Use a multiprocessing pool for parallel execution
-                extra_kwargs['pool'] = pool
-
+        if mpi:
+            pool_function = MPIPool
+            pool_args = ()
+        elif parallel:
+            pool_function = Pool
+            pool_args = multiprocessing.cpu_count() - 1
+        else:
+            def pool_function():
+                return None
+            pool_args = ()
+        with pool_function(*pool_args) as pool:
             # Initialize the MCMC sampler from emcee
             sampler = emcee.EnsembleSampler(
                 self.n_walkers, self.n_dim, self.log_probability,
-                **init_kwargs, **extra_kwargs
+                **init_kwargs, pool=pool
             )
 
             # Run the MCMC simulation

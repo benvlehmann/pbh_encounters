@@ -65,7 +65,6 @@ def main(n_steps, output, case):
     )
     mc = mc_cases[case]
     backend = emcee.backends.HDFBackend(output)
-    backend.reset(mc.n_walkers, mc.n_dim)
     mc.run(
         skip_initial_state_check=True, mpi=True,
         init_kwargs=dict(

@@ -11,7 +11,7 @@ import argparse
 import emcee
 
 from pbh_encounters.ephemeris import BodyGroup
-from pbh_encounters.data import SOLAR_SYSTEM_SIMPLIFIED
+from pbh_encounters.data import SOLAR_SYSTEM_SIMPLIFIED as SSS
 from pbh_encounters.mcmc import SolarSystemMonteCarlo
 
 
@@ -26,8 +26,8 @@ def main(n_steps, output, case):
             'inner_only', or 'full'.
     """
     dist_bodies = BodyGroup(
-        SOLAR_SYSTEM_SIMPLIFIED.n['Mars'],
-        SOLAR_SYSTEM_SIMPLIFIED.n['Venus']
+        SSS.n['Mars'],
+        SSS.n['Venus']
     )
     kwargs = dict(
         n_steps=n_steps,
@@ -40,26 +40,26 @@ def main(n_steps, output, case):
     mc_cases = dict(
         mars_only=SolarSystemMonteCarlo(
             bodies=BodyGroup(
-                SOLAR_SYSTEM_SIMPLIFIED.n['Sun'],
-                SOLAR_SYSTEM_SIMPLIFIED.n['Earth'],
-                SOLAR_SYSTEM_SIMPLIFIED.n['Mars']
+                SSS.n['Sun'],
+                SSS.n['Earth'],
+                SSS.n['Mars']
             ),
             dist_bodies=BodyGroup(
-                SOLAR_SYSTEM_SIMPLIFIED.n['Mars'],
+                SSS.n['Mars'],
             ), **kwargs
         ),
         inner_only=SolarSystemMonteCarlo(
             bodies=BodyGroup(
-                SOLAR_SYSTEM_SIMPLIFIED.n['Sun'],
-                SOLAR_SYSTEM_SIMPLIFIED.n['Mercury'],
-                SOLAR_SYSTEM_SIMPLIFIED.n['Venus'],
-                SOLAR_SYSTEM_SIMPLIFIED.n['Earth'],
-                SOLAR_SYSTEM_SIMPLIFIED.n['Mars']
+                SSS.n['Sun'],
+                SSS.n['Mercury'],
+                SSS.n['Venus'],
+                SSS.n['Earth'],
+                SSS.n['Mars']
             ),
             dist_bodies=dist_bodies, **kwargs
         ),
         full=SolarSystemMonteCarlo(
-            bodies=SOLAR_SYSTEM_SIMPLIFIED,
+            bodies=SSS,
             dist_bodies=dist_bodies, **kwargs
         )
     )

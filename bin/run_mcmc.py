@@ -56,10 +56,7 @@ def main(n_steps, output, case):
                 SOLAR_SYSTEM_SIMPLIFIED.n['Earth'],
                 SOLAR_SYSTEM_SIMPLIFIED.n['Mars']
             ),
-            dist_bodies=BodyGroup(
-                SOLAR_SYSTEM_SIMPLIFIED.n['Mars'],
-                SOLAR_SYSTEM_SIMPLIFIED.n['Venus']
-            ), **kwargs
+            dist_bodies=dist_bodies, **kwargs
         ),
         full=SolarSystemMonteCarlo(
             bodies=SOLAR_SYSTEM_SIMPLIFIED,

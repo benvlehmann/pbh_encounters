@@ -83,7 +83,7 @@ if __name__ == '__main__':
 
     # Add arguments
     parser.add_argument(
-        '--n_steps', 
+        '--n-steps', 
         type=int, 
         required=True, 
         help='Number of steps to use in the MCMC simulation.'

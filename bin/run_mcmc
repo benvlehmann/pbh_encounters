@@ -15,12 +15,13 @@ from pbh_encounters.data import SOLAR_SYSTEM_SIMPLIFIED as SSS
 from pbh_encounters.mcmc import SolarSystemMonteCarlo
 
 
-def main(n_steps, output, case):
+def main(n_steps, n_walkers, output, case):
     """
     Run the MCMC simulation for a specified solar system case.
 
     Args:
-        n_steps (int): The number of steps to be used in the MCMC simulation.
+        n_steps (int): The number of steps to use in the MCMC simulation.
+        n_walkers (int): The number of walkers to use in the MCMC simulation.
         output (str): File path where the MCMC chains will be saved.
         case (str): Specifies the simulation case. Options are 'mars_only',
             'inner_only', or 'full'.
@@ -31,6 +32,7 @@ def main(n_steps, output, case):
     )
     kwargs = dict(
         n_steps=n_steps,
+        n_walkers=n_walkers,
         sim_kwargs=dict(
             sim_attrs=dict(
                 integrator='ias15'
@@ -88,6 +90,12 @@ if __name__ == '__main__':
         help='Number of steps to use in the MCMC simulation.'
     )
     parser.add_argument(
+        '--n-walkers', 
+        type=int, 
+        required=True, 
+        help='Number of walkers to use in the MCMC simulation.'
+    )
+    parser.add_argument(
         '--output', 
         type=str, 
         required=True, 
@@ -105,4 +113,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Run main function with provided arguments
-    main(args.n_steps, args.output, args.case)
+    main(args.n_steps, args.n_walkers, args.output, args.case)

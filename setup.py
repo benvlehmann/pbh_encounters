@@ -28,4 +28,5 @@ setup(
         "schwimmbad"
     ],
     python_requires='>=3',
+    scripts=['bin/run_mcmc.py']
 )

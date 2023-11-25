@@ -6,7 +6,7 @@ inner planets only, and the full solar system.
 
 """
 
-
+import os
 import argparse
 import emcee
 
@@ -66,12 +66,15 @@ def main(n_steps, n_walkers, output, case):
         )
     )
     mc = mc_cases[case]
+
+    resume = os.path.exists(output)
     backend = emcee.backends.HDFBackend(output)
     mc.run(
         skip_initial_state_check=True, mpi=True,
         init_kwargs=dict(
             backend=backend
-        )
+        ),
+        resume=resume
     )
 
 

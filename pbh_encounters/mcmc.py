@@ -32,7 +32,6 @@ Dependencies:
 
 """
 
-import os
 import numpy as np
 import emcee
 import multiprocessing
@@ -533,7 +532,7 @@ class SolarSystemMonteCarlo(object):
         return log_prior + self.log_likelihood(params)
 
     def run(self, *args, init_kwargs=dict(), parallel=True,
-            mpi=False, **kwargs):
+            mpi=False, resume=False, **kwargs):
         """
         Runs the MCMC simulation using the emcee package.
 
@@ -551,6 +550,8 @@ class SolarSystemMonteCarlo(object):
         mpi (bool, optional): Flag to indicate if parallelization should use
             MPI instead of multiprocessing. If True, the `parallel` keyword
             is ignored. Defaults to False.
+        resume (bool, optional): Flag to indicate that this is resuming chains
+            to be loaded from disk.
         **kwargs: Additional keyword arguments for the emcee's run_mcmc method.
 
         Returns:
@@ -583,9 +584,8 @@ class SolarSystemMonteCarlo(object):
             # Set the starting point, resuming existing chains if supplied
             start = self.origins
             backend = init_kwargs.get('backend')
-            if backend is not None:
-                if os.path.exists(backend.filename):
-                    start = None
+            if backend is not None and resume:
+                start = None
 
             # Run the MCMC simulation
             # The origins are the starting points for each walker

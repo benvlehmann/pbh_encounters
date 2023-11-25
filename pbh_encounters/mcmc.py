@@ -32,7 +32,7 @@ Dependencies:
 
 """
 
-
+import os
 import numpy as np
 import emcee
 import multiprocessing
@@ -580,11 +580,17 @@ class SolarSystemMonteCarlo(object):
                 **init_kwargs, pool=pool
             )
 
+            # Set the starting point, resuming existing chains if supplied
+            start = self.origins
+            backend = init_kwargs.get('backend')
+            if backend is not None:
+                if os.path.exists(backend.filename):
+                    start = None
+
             # Run the MCMC simulation
             # The origins are the starting points for each walker
             # The number of steps each walker takes is defined by self.n_steps
-            sampler.run_mcmc(
-                self.origins, self.n_steps, progress=True, **kwargs)
+            sampler.run_mcmc(start, self.n_steps, progress=True, **kwargs)
 
         # Return the sampler for further analysis or diagnostics
         return sampler

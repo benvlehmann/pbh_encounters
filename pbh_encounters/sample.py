@@ -128,6 +128,10 @@ class Sampler(object):
         """
         if pool.is_master():
             # Generate parameter points from a Sobol sequence
+
+            self.n_samples = 2**14
+            self.log2_n_samples = 14
+
             sobol_sampler = Sobol(d=self.n_dim, scramble=False)
             self.points = sobol_sampler.random_base2(m=self.log2_n_samples)
             np.random.shuffle(self.points)
@@ -137,15 +141,12 @@ class Sampler(object):
             diffs = upper_bounds - lower_bounds
             self.points = lower_bounds + self.points * diffs
 
-            batch = self.points[:self.batch_size]
-            self.n_samples = 10000
-
             # Evaluate the function on the sample points
             for start_idx in tqdm(
                 np.arange(0, self.n_samples, self.batch_size, dtype=int)
             ):
-                #end_idx = min(start_idx + self.batch_size, self.n_samples)
-                #batch = self.points[start_idx:end_idx]
+                end_idx = min(start_idx + self.batch_size, self.n_samples)
+                batch = self.points[start_idx:end_idx]
                 batch_results = list(pool.map(self.func, batch))
                 batch_results = np.array(batch_results)
                 self.save(batch, batch_results)

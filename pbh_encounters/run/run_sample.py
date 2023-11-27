@@ -6,9 +6,10 @@ from ..data import SOLAR_SYSTEM_SIMPLIFIED as SSS
 from ..sample import Sampler
 
 
-def run(n_samples, output, case):
+def run(n_samples, output, case, batch_size):
     kwargs = dict(
         n_samples=n_samples,
+        batch_size=batch_size,
         output=output,
         dist_bodies=BodyGroup(
             SSS.n['Mars'],
@@ -72,9 +73,16 @@ def main():
         choices=['mars_only', 'inner_only', 'full'],
         help="Simulation case: 'mars_only', 'inner_only', or 'full'."
     )
+    parser.add_argument(
+        '--batch-size', 
+        type=int, 
+        required=False,
+        default=int(1e4),
+        help="Batch size for sample computation."
+    )
 
     # Parse arguments
     args = parser.parse_args()
 
     # Run main function with provided arguments
-    run(args.n_samples, args.output, args.case)
+    run(args.n_samples, args.output, args.case, args.batch_size)

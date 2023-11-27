@@ -95,7 +95,7 @@ class Sampler(object):
         with h5py.File(self.output, 'a') as f:
             if dataset_name not in f:
                 # Create the dataset if it doesn't exist
-                maxshape = (None,) + results.shape[1:]
+                maxshape = (None, points.shape[1] + results.shape[1])
                 dataset = f.create_dataset(
                     dataset_name, data=data, maxshape=maxshape,
                     dtype='float64', chunks=True)

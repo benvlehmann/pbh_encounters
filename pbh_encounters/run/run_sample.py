@@ -40,9 +40,9 @@ def run(n_samples, output, case):
         raise ValueError("Unrecognized case")
 
     sampler = Sampler(**kwargs)
-    return sampler
     with choose_pool(mpi=True, processes=None) as pool:
         sampler.sample(pool)
+    return sampler
 
 
 def main():

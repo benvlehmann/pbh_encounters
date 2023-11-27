@@ -139,15 +139,15 @@ class Sampler(object):
             self.points = lower_bounds + self.points * diffs
             batches = []
             # Evaluate the function on the sample points
-            for start_idx in tqdm(
-                np.arange(0, self.n_samples, self.batch_size, dtype=int)
+            for start_idx in np.arange(
+                0, self.n_samples, self.batch_size, dtype=int
             ):
                 end_idx = min(start_idx + self.batch_size, self.n_samples)
                 batches.append(self.points[start_idx:end_idx])
             del self.points
 
             # Evaluate the function on the sample points
-            for batch in batches:
+            for batch in tqdm(batches):
                 batch_results = list(pool.map(self.func, batch))
                 batch_results = np.array(batch_results)
                 self.save(batch, batch_results)

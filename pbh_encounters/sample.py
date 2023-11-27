@@ -140,7 +140,6 @@ class Sampler(object):
             for start_idx in tqdm(range(0, self.n_samples, self.batch_size)):
                 end_idx = min(start_idx + self.batch_size, self.n_samples)
                 batch = self.points[start_idx:end_idx]
-                print("Now running batch", start_idx, end_idx)
                 batch_results = list(pool.map(self.func, batch))
                 all_results.extend(batch_results)
                 batch_results = np.array(batch_results)

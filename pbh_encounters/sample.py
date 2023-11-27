@@ -131,6 +131,7 @@ class Sampler(object):
             sobol_sampler = Sobol(d=self.n_dim, scramble=False)
             self.points = sobol_sampler.random_base2(m=self.log2_n_samples)
             np.random.shuffle(self.points)
+            self.points = self.points[:10000]
 
             # Rescale Sobol samples to the given parameter bounds
             lower_bounds, upper_bounds = np.array(self.bounds).T

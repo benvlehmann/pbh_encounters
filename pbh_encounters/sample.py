@@ -35,7 +35,8 @@ class Sampler(object):
         """Initialize core attributes of the simulation scenario."""
         self.bodies = kwargs.get('bodies', SSS)
         self.batch_size = kwargs.get('batch_size', int(1e4))
-        self.n_samples = 2**kwargs.get('n_samples')
+        self.log2_n_samples = kwargs.get('n_samples')
+        self.n_samples = 2**self.log2_n_samples
         self.all_bodies = BodyGroup(*([PbhBody()] + list(self.bodies)))
         self.output = kwargs.get('output')
         self.output_offset = 0
@@ -128,8 +129,7 @@ class Sampler(object):
         if pool.is_master():
             # Generate parameter points from a Sobol sequence
             sobol_sampler = Sobol(d=self.n_dim, scramble=False)
-            self.points = sobol_sampler.random_base2(
-                m=int(np.log2(self.n_samples)))
+            self.points = sobol_sampler.random_base2(m=self.log2_n_samples)
 
             # Rescale Sobol samples to the given parameter bounds
             lower_bounds, upper_bounds = np.array(self.bounds).T
@@ -138,7 +138,9 @@ class Sampler(object):
 
             # Evaluate the function on the sample points
             all_results = []
-            for start_idx in tqdm(range(0, self.n_samples, self.batch_size)):
+            for start_idx in tqdm(
+                np.arange(0, self.n_samples, self.batch_size, dtype=int)
+            ):
                 end_idx = min(start_idx + self.batch_size, self.n_samples)
                 batch = self.points[start_idx:end_idx]
                 batch_results = list(pool.map(self.func, batch))

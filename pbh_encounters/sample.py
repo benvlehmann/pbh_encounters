@@ -144,6 +144,7 @@ class Sampler(object):
             ):
                 end_idx = min(start_idx + self.batch_size, self.n_samples)
                 batches.append(self.points[start_idx:end_idx])
+            del self.points
 
             # Evaluate the function on the sample points
             for batch in tqdm(batches):

@@ -95,8 +95,10 @@ class Sampler(object):
         with h5py.File(self.output, 'a') as f:
             if dataset_name not in f:
                 # Create the dataset if it doesn't exist
+                maxshape = (None,) + results.shape[1:]
                 dataset = f.create_dataset(
-                    dataset_name, data=data, dtype='float64')
+                    dataset_name, data=data, maxshape=maxshape,
+                    dtype='float64', chunks=True)
                 dataset.attrs['PBH_MASS'] = PBH_MASS
                 dataset.attrs['PBH_SPEED'] = PBH_SPEED
             else:

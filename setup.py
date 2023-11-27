@@ -30,5 +30,5 @@ setup(
         "schwimmbad"
     ],
     python_requires='>=3.7',
-    scripts=['bin/pbhe_mcmc', 'pbhe_sample']
+    scripts=['bin/pbhe_mcmc', 'bin/pbhe_sample']
 )

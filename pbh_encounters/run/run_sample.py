@@ -47,7 +47,7 @@ def run(n_samples, output, case):
 
 def main():
     """
-    Parse command-line arguments and run the MCMC simulation.
+    Parse command-line arguments and run the sampler
     """
     # Create the parser
     parser = argparse.ArgumentParser(description='Sample distance deltas.')
@@ -63,7 +63,7 @@ def main():
         '--output', 
         type=str, 
         required=True, 
-        help='File path to which to save the MCMC chains.'
+        help='File path to which to save the samples.'
     )
     parser.add_argument(
         '--case', 

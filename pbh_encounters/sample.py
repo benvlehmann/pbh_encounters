@@ -95,7 +95,7 @@ class Sampler(object):
         with h5py.File(self.output, 'a') as f:
             if dataset_name not in f:
                 # Create the dataset if it doesn't exist
-                maxshape = (None, points.shape[1] + results.shape[1])
+                maxshape = (None,) + data.shape[1:]
                 dataset = f.create_dataset(
                     dataset_name, data=data, maxshape=maxshape,
                     dtype='float64', chunks=True)
@@ -104,8 +104,8 @@ class Sampler(object):
             else:
                 # Resize and append
                 dataset = f[dataset_name]
-                dataset.resize((dataset.shape[0] + results.shape[0]), axis=0)
-                dataset[index:index + len(results)] = results
+                dataset.resize((dataset.shape[0] + data.shape[0]), axis=0)
+                dataset[index:index + len(results)] = data
 
     def sample(self, pool):
         """

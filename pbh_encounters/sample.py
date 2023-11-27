@@ -38,6 +38,7 @@ class Sampler(object):
         self.n_samples = 2**kwargs.get('n_samples')
         self.all_bodies = BodyGroup(*([PbhBody()] + list(self.bodies)))
         self.output = kwargs.get('output')
+        self.output_offset = 0
 
         # Names of parameters specific to the PBH
         self.param_names = ('r', 'cos_theta', 'phi', 'cos_alpha', 'beta')
@@ -80,7 +81,7 @@ class Sampler(object):
         dof = deltas.compressed().size
         return np.array([fom, dof])
 
-    def save(self, points, results, index=0):
+    def save(self, points, results):
         """
         Save the simulation results to an HDF5 file.
 
@@ -104,7 +105,8 @@ class Sampler(object):
             else:
                 # Resize and append
                 dataset = f[dataset_name]
-                dataset.resize((dataset.shape[0] + data.shape[0]), axis=0)
+                index = dataset.shape[0]
+                dataset.resize((index + data.shape[0]), axis=0)
                 dataset[index:index + data.shape[0]] = data
 
     def sample(self, pool):
@@ -135,7 +137,6 @@ class Sampler(object):
             self.points = lower_bounds + self.points * diffs
 
             # Evaluate the function on the sample points
-            total_processed = 0
             all_results = []
             for start_idx in tqdm(range(0, self.n_samples, self.batch_size)):
                 end_idx = min(start_idx + self.batch_size, self.n_samples)
@@ -145,8 +146,7 @@ class Sampler(object):
                 batch_results = np.array(batch_results)
                 # Save results if requested
                 if self.output is not None:
-                    self.save(batch, batch_results, index=total_processed)
-                total_processed += len(batch_results)
+                    self.save(batch, batch_results)
 
             return np.array(all_results)
         else:

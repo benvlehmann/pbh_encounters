@@ -122,8 +122,7 @@ class Sampler(object):
             self.points = lower_bounds + self.points * diffs
 
             # Evaluate the function on the sample points
-            tasks = pool.map(self.func, self.points)
-            results = np.array([result for task in tasks for result in task])
+            results = np.array(list(pool.map(self.func, self.points)))
 
             # Save results if requested
             if self.output is not None:

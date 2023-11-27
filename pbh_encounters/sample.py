@@ -129,9 +129,6 @@ class Sampler(object):
         if pool.is_master():
             # Generate parameter points from a Sobol sequence
 
-            self.n_samples = 2**14
-            self.log2_n_samples = 18
-
             sobol_sampler = Sobol(d=self.n_dim, scramble=False)
             self.points = sobol_sampler.random_base2(m=self.log2_n_samples)
             np.random.shuffle(self.points)
@@ -140,6 +137,7 @@ class Sampler(object):
             lower_bounds, upper_bounds = np.array(self.bounds).T
             diffs = upper_bounds - lower_bounds
             self.points = lower_bounds + self.points * diffs
+            self.points = self.points[:10000]
 
             # Evaluate the function on the sample points
             for start_idx in tqdm(

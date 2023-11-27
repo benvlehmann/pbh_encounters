@@ -130,6 +130,7 @@ class Sampler(object):
             # Generate parameter points from a Sobol sequence
             sobol_sampler = Sobol(d=self.n_dim, scramble=False)
             self.points = sobol_sampler.random_base2(m=self.log2_n_samples)
+            self.points = np.random.shuffle(self.points)
 
             # Rescale Sobol samples to the given parameter bounds
             lower_bounds, upper_bounds = np.array(self.bounds).T

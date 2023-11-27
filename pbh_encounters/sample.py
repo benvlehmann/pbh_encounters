@@ -138,6 +138,7 @@ class Sampler(object):
             self.points = lower_bounds + self.points * diffs
 
             batch = self.points[:self.batch_size]
+            self.n_samples = 10000
 
             # Evaluate the function on the sample points
             for start_idx in tqdm(

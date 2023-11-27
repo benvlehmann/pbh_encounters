@@ -129,7 +129,7 @@ class Sampler(object):
         if pool.is_master():
             # Generate parameter points from a Sobol sequence
 
-            self.n_samples = 2**14
+            self.n_samples = 2**18
             self.log2_n_samples = 14
 
             sobol_sampler = Sobol(d=self.n_dim, scramble=False)

@@ -6,3 +6,4 @@ rebound
 emcee
 schwimmbad
 scipy
+tqdm

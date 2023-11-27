@@ -58,7 +58,7 @@ def main():
         '-n', '--n-samples',
         type=int,
         required=True,
-        help="Number of samples to generate."
+        help="Log base 2 of the number of samples to generate."
     )
     parser.add_argument(
         '--output', 

@@ -35,7 +35,7 @@ class Sampler(object):
         """Initialize core attributes of the simulation scenario."""
         self.bodies = kwargs.get('bodies', SSS)
         self.batch_size = kwargs.get('batch_size', int(1e4))
-        self.n_samples = kwargs.get('n_samples')
+        self.n_samples = 2**kwargs.get('n_samples')
         self.all_bodies = BodyGroup(*([PbhBody()] + list(self.bodies)))
         self.output = kwargs.get('output')
 
@@ -105,7 +105,7 @@ class Sampler(object):
                 # Resize and append
                 dataset = f[dataset_name]
                 dataset.resize((dataset.shape[0] + data.shape[0]), axis=0)
-                dataset[index:index + len(results)] = data
+                dataset[index:index + data.shape[0]] = data
 
     def sample(self, pool):
         """

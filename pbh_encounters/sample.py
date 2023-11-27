@@ -137,7 +137,7 @@ class Sampler(object):
             lower_bounds, upper_bounds = np.array(self.bounds).T
             diffs = upper_bounds - lower_bounds
             self.points = lower_bounds + self.points * diffs
-            self.points = self.points[:10000]
+            #self.points = self.points[:10000]
             batch = self.points[:self.batch_size]
 
             # Evaluate the function on the sample points

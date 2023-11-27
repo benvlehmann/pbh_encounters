@@ -10,12 +10,12 @@ import os
 import argparse
 import emcee
 
-from pbh_encounters.ephemeris import BodyGroup
-from pbh_encounters.data import SOLAR_SYSTEM_SIMPLIFIED as SSS
-from pbh_encounters.mcmc import SolarSystemMonteCarlo
+from ..ephemeris import BodyGroup
+from ..data import SOLAR_SYSTEM_SIMPLIFIED as SSS
+from ..mcmc import SolarSystemMonteCarlo
 
 
-def main(n_steps, n_walkers, output, case):
+def run(n_steps, n_walkers, output, case):
     """
     Run the MCMC simulation for a specified solar system case.
 
@@ -78,7 +78,7 @@ def main(n_steps, n_walkers, output, case):
     )
 
 
-if __name__ == '__main__':
+def main():
     """
     Parse command-line arguments and run the MCMC simulation.
     """
@@ -116,4 +116,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Run main function with provided arguments
-    main(args.n_steps, args.n_walkers, args.output, args.case)
+    run(args.n_steps, args.n_walkers, args.output, args.case)

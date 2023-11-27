@@ -131,7 +131,6 @@ class Sampler(object):
             sobol_sampler = Sobol(d=self.n_dim, scramble=False)
             self.points = sobol_sampler.random_base2(m=self.log2_n_samples)
             np.random.shuffle(self.points)
-            self.points = self.points[:10000]
 
             # Rescale Sobol samples to the given parameter bounds
             lower_bounds, upper_bounds = np.array(self.bounds).T
@@ -145,12 +144,13 @@ class Sampler(object):
             ):
                 end_idx = min(start_idx + self.batch_size, self.n_samples)
                 batch = self.points[start_idx:end_idx]
+                print("Batch size", batch.size)
                 batch_results = list(pool.map(self.func, batch))
                 all_results.extend(batch_results)
                 batch_results = np.array(batch_results)
                 # Save results if requested
-                if self.output is not None:
-                    self.save(batch, batch_results)
+                #if self.output is not None:
+                #    self.save(batch, batch_results)
 
             return np.array(all_results)
         else:

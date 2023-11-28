@@ -3,10 +3,10 @@ from schwimmbad import choose_pool
 
 from ..ephemeris import BodyGroup
 from ..data import SOLAR_SYSTEM_SIMPLIFIED as SSS
-from ..sample import Sampler
+from ..sample import SpectralRatioSampler
 
 
-def run(n_samples, output, case, batch_size):
+def run(n_samples, output, case, batch_size, no_mpi):
     kwargs = dict(
         n_samples=n_samples,
         batch_size=batch_size,
@@ -40,8 +40,12 @@ def run(n_samples, output, case, batch_size):
     else:
         raise ValueError("Unrecognized case")
 
-    sampler = Sampler(**kwargs)
-    with choose_pool(mpi=True, processes=None) as pool:
+    sampler = SpectralRatioSampler(**kwargs)
+    if no_mpi:
+        pool_kwargs = dict(processes=4)
+    else:
+        pool_kwargs = dict(mpi=True, processes=None)
+    with choose_pool(**pool_kwargs) as pool:
         sampler.sample(pool)
     return sampler
 
@@ -80,9 +84,14 @@ def main():
         default=int(1e4),
         help="Batch size for sample computation."
     )
+    parser.add_argument(
+        '--no-mpi', 
+        action='store_true',
+        help="Flag to use multiprocessing instead of MPI."
+    )
 
     # Parse arguments
     args = parser.parse_args()
 
     # Run main function with provided arguments
-    run(args.n_samples, args.output, args.case, args.batch_size)
+    run(args.n_samples, args.output, args.case, args.batch_size, args.no_mpi)

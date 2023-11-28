@@ -95,11 +95,13 @@ class Ephemeris(object):
 
     """
     def __init__(self, *args, **kwargs):
+        keys = ('t', 'x', 'y', 'z', 'vx', 'vy', 'vz')
         data = kwargs.get('data')
         if data is not None:
             self.data = data
+            for i, key in enumerate(keys):
+                setattr(self, key, self.data[:, i])
         else:
-            keys = ('t', 'x', 'y', 'z', 'vx', 'vy', 'vz')
             for key in keys:
                 setattr(self, key, np.asarray(kwargs[key]))
             t_order = np.argsort(self.t)

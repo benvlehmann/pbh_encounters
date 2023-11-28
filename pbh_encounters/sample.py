@@ -72,15 +72,7 @@ class Sampler(object):
         ])
 
     def func(self, params):
-        r, cos_theta, phi, cos_alpha, beta = params
-        theta = np.arccos(cos_theta)
-        alpha = np.arccos(cos_alpha)
-        deltas = self.simulator.delta_distances(
-            PBH_MASS, r, theta, phi, PBH_SPEED, alpha, beta)
-        fom = np.sqrt(
-            np.sum((deltas / self.dist_uncertainty[:, np.newaxis])**2))
-        dof = deltas.compressed().size
-        return np.array([fom, dof])
+        raise NotImplementedError
 
     def save(self, points, results):
         """
@@ -126,30 +118,120 @@ class Sampler(object):
         array: A list of results for each sample.
 
         """
-        if pool.is_master():
-            # Generate parameter points from a Sobol sequence
-
-            sobol_sampler = Sobol(d=self.n_dim, scramble=False)
-            self.points = sobol_sampler.random_base2(m=self.log2_n_samples)
-            np.random.shuffle(self.points)
-
-            # Rescale Sobol samples to the given parameter bounds
-            lower_bounds, upper_bounds = np.array(self.bounds).T
-            diffs = upper_bounds - lower_bounds
-            self.points = lower_bounds + self.points * diffs
-            batches = []
-            # Evaluate the function on the sample points
-            for start_idx in np.arange(
-                0, self.n_samples, self.batch_size, dtype=int
-            ):
-                end_idx = min(start_idx + self.batch_size, self.n_samples)
-                batches.append(self.points[start_idx:end_idx])
-            del self.points
-
-            # Evaluate the function on the sample points
-            for batch in tqdm(batches):
-                batch_results = list(pool.map(self.func, batch))
-                batch_results = np.array(batch_results)
-                self.save(batch, batch_results)
+        try:
+            master = pool.is_master()
+        except AttributeError:
+            master = True
+            mpi = False
         else:
+            mpi = True
+
+        if mpi and not master:
             pool.wait_workers()
+            return
+
+        # Generate parameter points from a Sobol sequence
+        sobol_sampler = Sobol(d=self.n_dim, scramble=False)
+        self.points = sobol_sampler.random_base2(m=self.log2_n_samples)
+        np.random.shuffle(self.points)
+
+        # Rescale Sobol samples to the given parameter bounds
+        lower_bounds, upper_bounds = np.array(self.bounds).T
+        diffs = upper_bounds - lower_bounds
+        self.points = lower_bounds + self.points * diffs
+        batches = []
+        # Evaluate the function on the sample points
+        for start_idx in np.arange(
+            0, self.n_samples, self.batch_size, dtype=int
+        ):
+            end_idx = min(start_idx + self.batch_size, self.n_samples)
+            batches.append(self.points[start_idx:end_idx])
+
+        # This line prevents the per-batch speed from increasing with the
+        # number of samples. I have NO IDEA why.
+        del self.points
+
+        # Evaluate the function on the sample points
+        for batch in tqdm(batches):
+            batch_results = list(pool.map(self.func, batch))
+            batch_results = np.array(batch_results)
+            self.save(batch, batch_results)
+
+
+class DistanceSampler(Sampler):
+    def func(self, params):
+        r, cos_theta, phi, cos_alpha, beta = params
+        theta = np.arccos(cos_theta)
+        alpha = np.arccos(cos_alpha)
+        deltas = self.simulator.delta_distances(
+            PBH_MASS, r, theta, phi, PBH_SPEED, alpha, beta)
+        fom = np.sqrt(
+            np.sum((deltas / self.dist_uncertainty[:, np.newaxis])**2))
+        dof = deltas.compressed().size
+        return np.array([fom, dof])
+
+
+def fourier_transform(times, signal):
+    # Calculate time step (assuming uniform sampling)
+    dt = times[1] - times[0]
+    
+    # Perform the FFT
+    fft_result = np.fft.fft(signal)
+
+    # Get frequencies corresponding to the FFT components
+    frequencies = np.fft.fftfreq(len(signal), d=dt)
+
+    # Get the amplitudes (absolute values of FFT result)
+    fft_amplitudes = np.abs(fft_result)
+
+    phases = np.angle(fft_result)
+    frequencies = np.abs(frequencies)
+    order = np.argsort(frequencies)
+
+    return frequencies[order], fft_amplitudes[order], phases[order]
+
+
+class SpectralRatioSampler(Sampler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Determine the inverse period of each distance body
+        self.inverse_periods = np.zeros(len(self.dist_bodies))
+        for i, distances in enumerate(self.simulator.base_dists):
+            times = self.simulator.times[i]
+            deviations = distances - np.mean(distances)
+            frequencies, amplitudes, _ = fourier_transform(times, deviations)
+            self.inverse_periods[i] = \
+                np.abs(frequencies[np.argmax(amplitudes)])
+            print(self.inverse_periods)
+
+    def statistic(self, times, signal, inverse_period):
+        frequencies, amplitudes, _ = fourier_transform(times, signal)
+        mask = (0.5*inverse_period < frequencies) & \
+               (frequencies < 1.5*inverse_period)
+        return np.sum(amplitudes[mask]) / np.sum(amplitudes)
+
+    def func(self, params):
+        r, cos_theta, phi, cos_alpha, beta = params
+        theta = np.arccos(cos_theta)
+        alpha = np.arccos(cos_alpha)
+        deltas = self.simulator.delta_distances(
+            PBH_MASS, r, theta, phi, PBH_SPEED, alpha, beta)
+
+        # Noise the deltas
+        noise = np.random.multivariate_normal(
+            mean=np.zeros_like(self.dist_uncertainty),
+            cov=np.diag(self.dist_uncertainty**2),
+            size=deltas.shape[1]
+        ).T
+        deltas += noise
+
+        # Compute the test statistics
+        stats = np.zeros(len(self.dist_bodies))
+        for i, delta in enumerate(deltas):
+            stats[i] = self.statistic(
+                self.simulator.times[i].compressed(),
+                delta.compressed(),
+                self.inverse_periods[i]
+            )
+        return stats

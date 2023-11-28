@@ -60,3 +60,6 @@ SECOND = 3.171e-8  # Second in Year units
 
 # Gravitational constant in the chosen system of units
 GRAVITATIONAL_CONSTANT = G_AU_EARTHMASS_YEAR
+
+# Density
+DM_DENSITY = 5.35e-19 * GRAM/METER**3

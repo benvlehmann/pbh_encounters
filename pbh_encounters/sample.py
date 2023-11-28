@@ -203,7 +203,6 @@ class SpectralRatioSampler(Sampler):
             frequencies, amplitudes, _ = fourier_transform(times, deviations)
             self.inverse_periods[i] = \
                 np.abs(frequencies[np.argmax(amplitudes)])
-            print(self.inverse_periods)
 
     def statistic(self, times, signal, inverse_period):
         frequencies, amplitudes, _ = fourier_transform(times, signal)
@@ -227,11 +226,18 @@ class SpectralRatioSampler(Sampler):
         deltas += noise
 
         # Compute the test statistics
-        stats = np.zeros(len(self.dist_bodies))
+        signal_stats = np.zeros(len(self.dist_bodies))
+        noise_stats = np.zeros_like(signal_stats)
         for i, delta in enumerate(deltas):
-            stats[i] = self.statistic(
-                self.simulator.times[i].compressed(),
+            times = self.simulator.times[i].compressed()
+            signal_stats[i] = self.statistic(
+                times,
                 delta.compressed(),
                 self.inverse_periods[i]
             )
-        return stats
+            noise_stats[i] = self.statistic(
+                times,
+                noise[i],
+                self.inverse_periods[i]
+            )
+        return np.hstack((signal_stats, noise_stats))

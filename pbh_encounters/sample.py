@@ -95,6 +95,8 @@ class Sampler(object):
                     dtype='float64', chunks=True)
                 dataset.attrs['PBH_MASS'] = PBH_MASS
                 dataset.attrs['PBH_SPEED'] = PBH_SPEED
+                dataset.attrs['DIST_BODIES'] = \
+                    [b.name for b in self.dist_bodies]
             else:
                 # Resize and append
                 dataset = f[dataset_name]
@@ -195,6 +197,8 @@ class SpectralRatioSampler(Sampler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.masses = np.geomspace(1e18, 1e27, 10) * GRAM
+
         # Determine the inverse period of each distance body
         self.inverse_periods = np.zeros(len(self.dist_bodies))
         for i, distances in enumerate(self.simulator.base_dists):
@@ -203,6 +207,13 @@ class SpectralRatioSampler(Sampler):
             frequencies, amplitudes, _ = fourier_transform(times, deviations)
             self.inverse_periods[i] = \
                 np.abs(frequencies[np.argmax(amplitudes)])
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        dataset_name = "results"
+        with h5py.File(self.output, 'a') as f:
+            dataset = f[dataset_name]
+            dataset.attrs['SIGNAL_MASSES'] = self.masses
 
     def statistic(self, times, signal, inverse_period):
         frequencies, amplitudes, _ = fourier_transform(times, signal)
@@ -218,26 +229,27 @@ class SpectralRatioSampler(Sampler):
             PBH_MASS, r, theta, phi, PBH_SPEED, alpha, beta)
 
         # Noise the deltas
-        noise = np.random.multivariate_normal(
+        noises = np.random.multivariate_normal(
             mean=np.zeros_like(self.dist_uncertainty),
             cov=np.diag(self.dist_uncertainty**2),
             size=deltas.shape[1]
         ).T
-        deltas += noise
 
-        # Compute the test statistics
-        signal_stats = np.zeros(len(self.dist_bodies))
-        noise_stats = np.zeros_like(signal_stats)
-        for i, delta in enumerate(deltas):
-            times = self.simulator.times[i].compressed()
-            signal_stats[i] = self.statistic(
-                times,
-                delta.compressed(),
-                self.inverse_periods[i]
-            )
+        # Compute the test statistics: each body, then repeated for each mass
+        signal_stats = np.zeros((self.masses.size, len(self.dist_bodies)))
+        noise_stats = np.zeros(len(self.dist_bodies))
+        for i, mass in enumerate(self.masses):
+            for j, delta in enumerate(deltas):
+                times = self.simulator.times[j].compressed()
+                signal_stats[i, j] = self.statistic(
+                    times,
+                    (delta*mass/PBH_MASS + noises[j]).compressed(),
+                    self.inverse_periods[j]
+                )
+        for i, noise in enumerate(noises):
             noise_stats[i] = self.statistic(
                 times,
-                noise[i],
+                noise,
                 self.inverse_periods[i]
             )
-        return np.hstack((signal_stats, noise_stats))
+        return np.hstack((signal_stats.reshape(-1), noise_stats))

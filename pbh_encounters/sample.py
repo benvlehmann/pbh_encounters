@@ -273,7 +273,7 @@ class SpectralRatioSampler(Sampler):
         return np.hstack((signal_stats.reshape(-1), noise_stats))
 
 
-class CombinedSpectralRatioSampler(Sampler):
+class CombinedSpectralRatioSampler(SpectralRatioSampler):
     def _divided_statistic(self, times, signal, f_bounds, t0):
         mask_1 = times < t0
         mask_2 = ~mask_1

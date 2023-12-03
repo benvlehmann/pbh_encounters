@@ -313,7 +313,7 @@ class CombinedSpectralRatioSampler(SpectralRatioSampler):
         return stats
 
     def statistic(self, signal):
-        return np.amax(self.slide_statistic(signal))
+        return np.amax(self._slide_statistic(signal))
 
     def func(self, params):
         r, cos_theta, phi, cos_alpha, beta = params

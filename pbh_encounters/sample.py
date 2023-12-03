@@ -328,13 +328,13 @@ class CombinedSpectralRatioSampler(SpectralRatioSampler):
             cov=np.diag(self.dist_uncertainty**2),
             size=deltas.shape[1]
         ).T
+        noises = np.ma.array(noises)
+        noises.mask = deltas.mask
 
         # Compute the test statistics
         signal_stats = np.zeros((self.masses.size))
         noise_stat = np.zeros(1)
         for i, mass in enumerate(self.masses):
-            signal_stats[i] = self.statistic(
-                deltas*mass/PBH_MASS + noises
-            )
+            signal_stats[i] = self.statistic(deltas*mass/PBH_MASS + noises)
         noise_stat[0] = self.statistic(noises)
         return np.hstack((signal_stats, noise_stat))

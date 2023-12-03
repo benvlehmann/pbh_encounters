@@ -75,7 +75,7 @@ BODY_MOON = Body(
 )
 BODY_MARS = Body(
     id=499, name='Mars', mass=0.10747108840243433,
-    obs_cadence=10*DAY, obs_noise=1e0*METER,
+    obs_cadence=10*DAY, obs_noise=1e-1*METER,
     ephemeris=Ephemeris(
         data=np.array([
             [0.000000e+00, -1.258192e+00, -9.699281e-01, 1.059330e-02,

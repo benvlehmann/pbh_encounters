@@ -190,7 +190,7 @@ class Body(object):
     mass: float = None
     ephemeris: Ephemeris = None
     obs_cadence: float = 20
-    obs_noise: float = 1e-1*METER
+    obs_noise: float = 1e0*METER
     fetchable: bool = True
 
     @classmethod

@@ -3,7 +3,7 @@ from schwimmbad import choose_pool
 
 from ..ephemeris import BodyGroup
 from ..data import SOLAR_SYSTEM_SIMPLIFIED as SSS
-from ..sample import SpectralRatioSampler
+from ..sample import CombinedSpectralRatioSampler
 
 
 def run(n_samples, output, case, batch_size, no_mpi):
@@ -40,7 +40,7 @@ def run(n_samples, output, case, batch_size, no_mpi):
     else:
         raise ValueError("Unrecognized case")
 
-    sampler = SpectralRatioSampler(**kwargs)
+    sampler = CombinedSpectralRatioSampler(**kwargs)
     if no_mpi:
         pool_kwargs = dict(processes=4)
     else:

@@ -201,12 +201,30 @@ class SpectralRatioSampler(Sampler):
 
         # Determine the inverse period of each distance body
         self.inverse_periods = np.zeros(len(self.dist_bodies))
+        self.f_bounds = np.zeros((len(self.dist_bodies), 2))
         for i, distances in enumerate(self.simulator.base_dists):
             times = self.simulator.times[i]
             deviations = distances - np.mean(distances)
             frequencies, amplitudes, _ = fourier_transform(times, deviations)
-            self.inverse_periods[i] = \
-                np.abs(frequencies[np.argmax(amplitudes)])
+            i_peak = np.argmax(amplitudes)
+            f_peak = frequencies[i_peak]
+            a_peak = amplitudes[i_peak]
+            self.inverse_periods[i] = np.abs(f_peak)
+            # Find half-max to the left
+            a_i = a_peak
+            i_left = i_peak
+            while a_i > a_peak / 2:
+                i_left -= 1
+                a_i = amplitudes[i_left]
+            f_left = frequencies[i_left]
+            # Find half-max to the right
+            a_i = a_peak
+            i_right = i_peak
+            while a_i > a_peak / 2:
+                i_right += 1
+                a_i = amplitudes[i_right]
+            f_right = frequencies[i_right]
+            self.f_bounds[i] = f_left, f_right
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -253,3 +271,70 @@ class SpectralRatioSampler(Sampler):
                 self.inverse_periods[i]
             )
         return np.hstack((signal_stats.reshape(-1), noise_stats))
+
+
+class CombinedSpectralRatioSampler(Sampler):
+    def _divided_statistic(self, times, signal, f_bounds, t0):
+        mask_1 = times < t0
+        mask_2 = ~mask_1
+        if np.count_nonzero(mask_1) < 2 or np.count_nonzero(mask_2) < 2:
+            raise ValueError
+        frequencies_1, amplitudes_1, _ = fourier_transform(
+            times[mask_1].compressed(), signal[mask_1].compressed())
+        frequencies_2, amplitudes_2, _ = fourier_transform(
+            times[mask_2].compressed(), signal[mask_2].compressed())
+        f_mask_1 = \
+            (f_bounds[0] <= frequencies_1) & (frequencies_1 <= f_bounds[1])
+        f_mask_2 = \
+            (f_bounds[0] <= frequencies_2) & (frequencies_2 <= f_bounds[1])
+        if not np.any(f_mask_1) or not np.any(f_mask_2):
+            raise ValueError
+        bin_power_1 = np.sum(amplitudes_1[f_mask_1])
+        bin_power_2 = np.sum(amplitudes_2[f_mask_2])
+        return (bin_power_2 / np.sum(amplitudes_2)) \
+            * (bin_power_2 / bin_power_1)
+
+    def _combined_divided_statistic(self, signals, t0):
+        stats = []
+        for time, signal, f_bound in zip(
+            self.simulator.times, signals, self.f_bounds
+        ):
+            stats.append(self._divided_statistic(time, signal, f_bound, t0))
+        return np.prod(stats)
+
+    def _slide_statistic(self, signals, n_shifts=100):
+        stats = []
+        max_time = np.amax(self.simulator.times)
+        for t0 in np.linspace(1/np.amin(self.f_bounds), max_time, n_shifts):
+            try:
+                stats.append(self._combined_divided_statistic(signals, t0))
+            except ValueError:
+                continue
+        return stats
+
+    def statistic(self, signal):
+        return np.amax(self.slide_statistic(signal))
+
+    def func(self, params):
+        r, cos_theta, phi, cos_alpha, beta = params
+        theta = np.arccos(cos_theta)
+        alpha = np.arccos(cos_alpha)
+        deltas = self.simulator.delta_distances(
+            PBH_MASS, r, theta, phi, PBH_SPEED, alpha, beta)
+
+        # Noise the deltas
+        noises = np.random.multivariate_normal(
+            mean=np.zeros_like(self.dist_uncertainty),
+            cov=np.diag(self.dist_uncertainty**2),
+            size=deltas.shape[1]
+        ).T
+
+        # Compute the test statistics
+        signal_stats = np.zeros((self.masses.size))
+        noise_stat = np.zeros(1)
+        for i, mass in enumerate(self.masses):
+            signal_stats[i] = self.statistic(
+                deltas*mass/PBH_MASS + noises
+            )
+        noise_stat[0] = self.statistic(noises)
+        return np.hstack((signal_stats, noise_stat))

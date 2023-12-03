@@ -203,8 +203,9 @@ class SpectralRatioSampler(Sampler):
         self.inverse_periods = np.zeros(len(self.dist_bodies))
         self.f_bounds = np.zeros((len(self.dist_bodies), 2))
         for i, distances in enumerate(self.simulator.base_dists):
-            times = self.simulator.times[i]
+            times = self.simulator.times[i].compressed()
             deviations = distances - np.mean(distances)
+            deviations = deviations.compressed()
             frequencies, amplitudes, _ = fourier_transform(times, deviations)
             i_peak = np.argmax(amplitudes)
             f_peak = frequencies[i_peak]

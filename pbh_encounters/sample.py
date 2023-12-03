@@ -197,7 +197,7 @@ class SpectralRatioSampler(Sampler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.masses = np.geomspace(1e18, 1e27, 10) * GRAM
+        self.masses = np.geomspace(1e15, 1e27, 10) * GRAM
 
         # Determine the inverse period of each distance body
         self.inverse_periods = np.zeros(len(self.dist_bodies))

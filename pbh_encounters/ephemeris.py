@@ -50,7 +50,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from .jpl import get_new_horizons
-from .common import METER
+from .common import METER, DAY
 
 
 class Ephemeris(object):
@@ -189,8 +189,8 @@ class Body(object):
     name: str = None
     mass: float = None
     ephemeris: Ephemeris = None
-    obs_cadence: float = 20
-    obs_noise: float = 1e0*METER
+    obs_cadence: float = 20*DAY
+    obs_noise: float = 1e1*METER
     fetchable: bool = True
 
     @classmethod

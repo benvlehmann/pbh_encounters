@@ -173,6 +173,47 @@ class DistanceSampler(Sampler):
         return np.array([fom, dof])
 
 
+class MultiDistanceSampler(Sampler):
+    def func(self, params):
+        r, cos_theta, phi, cos_alpha, beta = params
+        theta = np.arccos(cos_theta)
+        alpha = np.arccos(cos_alpha)
+        deltas = self.simulator.delta_distances(
+            PBH_MASS, r, theta, phi, PBH_SPEED, alpha, beta)
+
+        # Record rms sum for each object
+        rms_sum = np.sqrt(
+            np.sum(
+                (deltas / self.dist_uncertainty[:, np.newaxis])**2,
+                axis=-1  # Sum over times
+            )
+        )
+
+        # Record rms peak for each object
+        rms_peak = np.sqrt(
+            np.amax(
+                (deltas / self.dist_uncertainty[:, np.newaxis])**2,
+                axis=-1  # Maximize over times
+            )
+        )
+
+        # Record rms peak for all objects together
+        rms_peak_all = np.sqrt(
+            np.amax(
+                np.sum(
+                    (deltas / self.dist_uncertainty[:, np.newaxis])**2,
+                    axis=0  # Sum over objects
+                )
+                # Maximize over times
+            )
+        )
+
+        # Record number of points for each object
+        dof = [d.compressed().size for d in deltas]
+
+        return np.hstack((rms_sum, rms_peak, [rms_peak_all], dof))
+
+
 def fourier_transform(times, signal):
     # Calculate time step (assuming uniform sampling)
     dt = times[1] - times[0]

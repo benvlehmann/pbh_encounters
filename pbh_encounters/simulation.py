@@ -153,6 +153,49 @@ class SolarSystemSimulation(rebound.Simulation):
         dists = np.linalg.norm(deltas, axis=-1)
         return dists
 
+    def positions(self, bodies: BodyGroup, times):
+        """Like masked_distances, but just gives barycentric positions.
+
+        Parameters:
+        bodies (BodyGroup): A BodyGroup of body objects whose distances from
+            Earth are to be calculated.
+        times (MaskedArray): A 2D masked numpy array of times. The shape of
+            the array is (number of bodies, number of times).
+
+        Returns:
+        MaskedArray: A 2D masked numpy array containing the distances. The
+            shape of the array is the same as `times`, with each unmasked
+            element indicating the distance of the corresponding body from
+            Earth at that time.
+
+        Raises: RuntimeError: If there are NaN values in the initial state or
+        at any time step during the integration.
+
+        """
+        # Initialize arrays for storing positions
+        xyz = np.zeros((times.shape[0], times.shape[1], 3))
+        earth_xyz = np.zeros(xyz.shape[1:])
+        all_times = np.sort(np.unique(times[~times.mask]))
+
+        # Check the shape consistency of times array
+        assert times.shape[1] == all_times.shape[0]
+
+        # Validate the initial state
+        for particle in self.particles:
+            if np.any(~np.isfinite(particle.xyz)):
+                raise BadMassError("nan in initial state")
+
+        # Integrate and compute positions at each time step
+        for i, t in enumerate(all_times):
+            self.integrate(t)
+            earth_xyz[i] = self.particles[self.earth.hash].xyz
+            if np.any(~np.isfinite(earth_xyz[i])):
+                raise BadMassError("nan at time", i)
+            for j, body in enumerate(bodies):
+                xyz[j, i] = self.particles[body.hash].xyz
+
+        return xyz, earth_xyz
+
     def masked_distances(self, bodies: BodyGroup, times):
         """
         Calculates the distances of specified bodies from Earth at given
@@ -193,27 +236,7 @@ class SolarSystemSimulation(rebound.Simulation):
         >>> distances = simulation.masked_distances(bodies, times)
 
         """
-        # Initialize arrays for storing positions
-        xyz = np.zeros((times.shape[0], times.shape[1], 3))
-        earth_xyz = np.zeros(xyz.shape[1:])
-        all_times = np.sort(np.unique(times[~times.mask]))
-
-        # Check the shape consistency of times array
-        assert times.shape[1] == all_times.shape[0]
-
-        # Validate the initial state
-        for particle in self.particles:
-            if np.any(~np.isfinite(particle.xyz)):
-                raise BadMassError("nan in initial state")
-
-        # Integrate and compute positions at each time step
-        for i, t in enumerate(all_times):
-            self.integrate(t)
-            earth_xyz[i] = self.particles[self.earth.hash].xyz
-            if np.any(~np.isfinite(earth_xyz[i])):
-                raise BadMassError("nan at time", i)
-            for j, body in enumerate(bodies):
-                xyz[j, i] = self.particles[body.hash].xyz
+        xyz, earth_xyz = self.positions(bodies, times)
 
         # Calculate the distance vectors and distances
         deltas = earth_xyz[np.newaxis, :, :] - xyz
@@ -512,6 +535,22 @@ class DistanceGenerator(object):
             )
         )
         return pbh
+
+    def positions(self, *args, dm=None, **kwargs):
+        # Create a PBH with specified parameters
+        pbh = self.pbh_body(*args, **kwargs)
+
+        # Adjust the masses of the bodies if necessary
+        if dm is not None:
+            body_mass_dm = zip(self.sim_generator.bodies, self.base_masses, dm)
+            for body, mass, dm in body_mass_dm:
+                body.mass = mass + dm
+
+        # Create the simulation with the PBH
+        sim = self.sim_generator.make_simulation(pbh=pbh)
+        # Run the simulation and sample positions
+        pos = sim.positions(self.dist_bodies, self.times)
+        return pos
 
     def distances(self, *args, dm=None, **kwargs):
         """

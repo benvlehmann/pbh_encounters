@@ -36,7 +36,7 @@ def run(n_samples, output, case, batch_size, no_mpi):
             )
         )
     elif case == 'full':
-        kwargs.update(bodies=SSS)
+        kwargs.update(bodies=SSS, dist_bodies=SSS)
     else:
         raise ValueError("Unrecognized case")
 
